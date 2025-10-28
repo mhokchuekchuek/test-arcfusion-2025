@@ -1,7 +1,7 @@
 # PDF Chat Agent - FastAPI Service
 # Multi-stage build for production-ready container
 
-FROM python:3.13-slim as base
+FROM python:3.13-slim AS base
 
 # Set working directory
 WORKDIR /app
