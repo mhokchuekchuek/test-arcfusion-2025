@@ -2,6 +2,8 @@
 
 Automated pipeline for ingesting PDF documents into the vector database.
 
+---
+
 ## Quick Start
 
 **Prerequisites:**
@@ -24,7 +26,7 @@ cp your_paper.pdf data/pdfs/papers/
 python scripts/ingest.py
 ```
 
-Output:
+**Output:**
 ```
 Vector store currently has 0 vectors
 Starting ingestion from: data/pdfs/papers
@@ -57,6 +59,8 @@ PDF → Parse → Chunk → Embed → Store
 3. **Embed** - Generate embeddings (batch size: 100)
 4. **Store** - Save to Qdrant with metadata
 
+**See [Pipeline](./pipeline.md)** for detailed step-by-step breakdown.
+
 ---
 
 ## Configuration
@@ -87,7 +91,34 @@ ingestion:
 
 ---
 
-## Programmatic Usage
+## Documentation
+
+### [Pipeline](./pipeline.md)
+Detailed breakdown of the 4-step ingestion process:
+- Step 1: Parse PDF (Docling)
+- Step 2: Chunk Text (LangChain)
+- Step 3: Generate Embeddings (LiteLLM)
+- Step 4: Store Vectors (Qdrant)
+
+### [Components](./components.md)
+Deep dive on each component:
+- PDF Parser (Docling)
+- Text Chunker (LangChain)
+- Embedding Generator (LiteLLM)
+- Vector Store (Qdrant)
+
+### [Usage](./usage.md)
+Programmatic usage examples:
+- Basic usage
+- Single file processing
+- Custom configuration
+- Error handling
+- Batch processing
+- CLI usage
+
+---
+
+## Quick Examples
 
 ### Basic Usage
 
@@ -108,8 +139,6 @@ for result in results:
         print(f"✗ {result['filename']}: {result['error']}")
 ```
 
----
-
 ### Process Single File
 
 ```python
@@ -125,119 +154,20 @@ print(f"Chunks: {result['num_chunks']}")
 print(f"Success: {result['success']}")
 ```
 
----
-
-### Custom Configuration
-
-```python
-from ingestor.processor import IngestionProcessor
-
-# Custom settings
-processor = IngestionProcessor(
-    directory="./custom_pdfs",
-    chunk_size=500,
-    chunk_overlap=100,
-    batch_size=50
-)
-
-results = processor.process()
-```
+**See [Usage](./usage.md)** for more examples.
 
 ---
 
 ## Components
 
-### 1. PDF Parser (Docling)
+| Component | Provider | Purpose |
+|-----------|----------|---------|
+| **Parser** | Docling | Extract text + metadata from PDFs |
+| **Chunker** | LangChain | Split text into overlapping chunks |
+| **Embedder** | LiteLLM | Generate 1536-dim vectors |
+| **Vector Store** | Qdrant | Store embeddings + metadata |
 
-```python
-from tools.llm.parser.selector import ParserSelector
-
-parser = ParserSelector.create(provider="docling")
-
-# Parse PDF
-result = parser.parse("paper.pdf")
-
-print(result.text)      # Extracted text
-print(result.metadata)  # Page numbers, etc.
-```
-
-**Why Docling?**
-- Handles complex layouts (multi-column, tables, equations)
-- Better for academic papers
-- Trade-off: Slower than simple parsers
-
----
-
-### 2. Text Chunker (LangChain)
-
-```python
-from tools.llm.chunking.selector import TextChunkerSelector
-
-chunker = TextChunkerSelector.create(
-    provider="langchain",
-    chunk_size=1000,
-    chunk_overlap=200
-)
-
-# Chunk text
-chunks = chunker.chunk(text)
-
-print(f"Created {len(chunks)} chunks")
-```
-
-**Chunk Settings:**
-- **Size: 1000 tokens** - Captures full paragraphs
-- **Overlap: 200 tokens** - Prevents splitting mid-concept
-- **20% overlap** - Maintains context
-
----
-
-### 3. Embedding Generator (LiteLLM)
-
-```python
-from tools.llm.client.selector import LLMClientSelector
-
-llm = LLMClientSelector.create(
-    provider="litellm",
-    embedding_model="text-embedding-3-small"
-)
-
-# Generate embeddings (batched)
-embeddings = llm.embed_batch(
-    texts=chunks,
-    batch_size=100
-)
-
-print(f"Generated {len(embeddings)} embeddings")
-```
-
-**Batch Size: 100**
-- Reduces API calls (100 chunks = 1 call)
-- Balances throughput vs rate limits
-
----
-
-### 4. Vector Store (Qdrant)
-
-```python
-from tools.database.vector.selector import VectorStoreSelector
-
-vector_store = VectorStoreSelector.create(
-    provider="qdrant",
-    collection_name="documents"
-)
-
-# Store vectors
-vector_store.add_embeddings(
-    embeddings=embeddings,
-    texts=chunks,
-    metadatas=[
-        {"source": "paper.pdf", "page": 1},
-        {"source": "paper.pdf", "page": 2},
-        # ...
-    ]
-)
-```
+**See [Components](./components.md)** for detailed documentation.
 
 ---
 
@@ -291,193 +221,6 @@ for pdf_file in pdf_files:
         })
 
 # One failure doesn't stop the pipeline
-```
-
----
-
-## Processing Steps Detail
-
-### Step 1: Parse PDF
-
-```python
-# Docling extracts text and structure
-parsed = parser.parse("paper.pdf")
-
-# Result
-{
-    'text': "Full paper text...",
-    'metadata': {
-        'pages': 12,
-        'title': "Paper Title",
-        'authors': ["Author 1", "Author 2"]
-    }
-}
-```
-
----
-
-### Step 2: Chunk Text
-
-```python
-# Split into overlapping chunks
-chunks = chunker.chunk(parsed.text)
-
-# Each chunk
-{
-    'text': "Chunk text...",
-    'metadata': {
-        'source': 'paper.pdf',
-        'page': 1,
-        'chunk_index': 0
-    }
-}
-```
-
----
-
-### Step 3: Generate Embeddings
-
-```python
-# Batch embedding generation
-embeddings = llm.embed_batch(
-    texts=[chunk['text'] for chunk in chunks],
-    batch_size=100
-)
-
-# Result: List of 1536-dim vectors
-# [[0.123, -0.456, ...], [0.789, ...], ...]
-```
-
----
-
-### Step 4: Store Vectors
-
-```python
-# Store in Qdrant
-vector_store.add_embeddings(
-    embeddings=embeddings,
-    texts=[chunk['text'] for chunk in chunks],
-    metadatas=[chunk['metadata'] for chunk in chunks]
-)
-```
-
----
-
-## Common Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| `Directory not found` | Config path incorrect | Ensure `data/pdfs/papers/` directory exists |
-| `No .pdf files found` | Empty directory | Place PDF files in `data/pdfs/papers/` |
-| `Failed to parse PDF` | Corrupted/encrypted PDF | Fix source file |
-| `Vector store has data` | Collection not empty | Clear collection to re-ingest |
-| `Rate limit error` | Too many API calls | Reduce batch_size or add delay |
-| `Connection refused` | Services not running | Start Docker services: `docker-compose up -d` |
-
----
-
-## Provider Pattern
-
-All components are swappable via configuration:
-
-```yaml
-# Change any provider without code changes
-ingestion:
-  llm:
-    provider: litellm              # or openai, anthropic
-    embedding_model: text-embedding-3-small
-
-  vectordb:
-    provider: qdrant               # or pinecone, weaviate
-
-  parser:
-    provider: docling              # or pypdf, pdfplumber
-
-  chunker:
-    provider: langchain            # or custom
-```
-
-Code automatically selects the right implementation:
-
-```python
-# Runtime provider selection
-parser = ParserSelector.create(provider=config.parser.provider)
-vector_store = VectorStoreSelector.create(provider=config.vectordb.provider)
-```
-
----
-
-## Testing
-
-```python
-def test_ingestion():
-    """Test PDF ingestion pipeline."""
-    processor = IngestionProcessor(
-        directory="./test_pdfs",
-        chunk_size=500
-    )
-
-    results = processor.process()
-
-    assert len(results) > 0
-    assert all(r['success'] for r in results)
-    assert sum(r['num_chunks'] for r in results) > 0
-
-
-def test_single_file():
-    """Test processing single PDF."""
-    processor = IngestionProcessor()
-
-    result = processor.process_file("test.pdf")
-
-    assert result['success'] is True
-    assert result['num_pages'] > 0
-    assert result['num_chunks'] > 0
-```
-
----
-
-## Limitations
-
-- **No deduplication** - Re-ingesting same file creates duplicates
-- **Sequential processing** - One file at a time (not parallel)
-- **All-or-nothing skip** - Any data present = skip all files
-- **In-memory mode** - Qdrant data lost on restart (use persistent mode in production)
-
----
-
-## Performance Tips
-
-### Large Documents
-
-```yaml
-# For large PDFs (100+ pages)
-ingestion:
-  chunk_size: 500        # Smaller chunks
-  batch_size: 50         # Smaller batches
-```
-
----
-
-### Many Small Documents
-
-```yaml
-# For many small PDFs
-ingestion:
-  chunk_size: 2000       # Larger chunks
-  batch_size: 200        # Larger batches
-```
-
----
-
-### Rate Limiting
-
-```python
-import time
-
-for batch in batches:
-    embeddings = llm.embed_batch(batch)
-    time.sleep(1)  # Add delay between batches
 ```
 
 ---
