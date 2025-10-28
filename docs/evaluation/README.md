@@ -17,11 +17,11 @@ LLM-as-a-Judge Evaluation Runner
 
 Scenario 1: Autonomous Multi-Step Research
   Workflow: ✓ PASS
-  Quality: relevance=0.95, accuracy=0.90
+  Quality: answer_quality=0.90, factual_correctness=0.95, completeness=0.85
 
 Scenario 2: Clarification Loop
   Workflow: ✓ PASS
-  Quality: relevance=0.90, clarity=0.95
+  Quality: answer_quality=0.90, factual_correctness=0.95
 
 ==============================================================
 SUMMARY: 4/4 passed
@@ -213,19 +213,17 @@ result['workflow'] = {
 
 ```python
 result['quality'] = {
-    'relevance': 0.95,      # How well answer addresses query (0-1)
-    'accuracy': 0.90,       # Factual correctness (0-1)
-    'completeness': 0.85,   # Coverage of all aspects (0-1)
-    'clarity': 0.90,        # Clear and understandable (0-1)
-    'reasoning': "Answer addresses both PDF and web sources..."
+    'answer_quality': 0.90,        # Clarity, structure, helpfulness (0-1)
+    'factual_correctness': 0.95,   # Accuracy, no hallucinations (0-1)
+    'completeness': 0.85,          # Meets expected criteria (0-1)
+    'reasoning': "Answer is well-structured and factually accurate..."
 }
 ```
 
-**Dimensions:**
-- **relevance**: Does answer address the query?
-- **accuracy**: Is information factually correct?
-- **completeness**: Are all aspects covered?
-- **clarity**: Is answer clear and understandable?
+**Metrics:**
+- **answer_quality**: Clear, well-structured, helpful response
+- **factual_correctness**: Accurate information supported by sources, no hallucinations
+- **completeness**: Meets expected answer criteria, addresses all query aspects
 
 ---
 
@@ -255,14 +253,20 @@ result = evaluator.run_scenario(
 
 Quality assessment using LLM:
 ```python
-judge = LLMJudge(llm_client)
+judge = LLMJudge(llm_client, langfuse_client)
 
-scores = judge.evaluate(
+scores = judge.evaluate_quality(
     query="What is RAG?",
+    expected_criteria="Should explain retrieval and generation",
     answer="RAG is Retrieval-Augmented Generation...",
-    dimensions=["relevance", "accuracy", "clarity"]
+    sources=[...]
 )
-# Returns: {'relevance': 0.95, 'accuracy': 0.90, ...}
+# Returns: {
+#   'answer_quality': 0.90,
+#   'factual_correctness': 0.95,
+#   'completeness': 0.85,
+#   'reasoning': '...'
+# }
 ```
 
 ---
@@ -299,7 +303,7 @@ EXCLUDED_AGENTS = ["clarification"]
 EXPECTED_TOOLS = ["pdf_retrieval"]
 EXCLUDED_TOOLS = ["web_search"]
 
-QUALITY_DIMENSIONS = ["relevance", "accuracy"]
+EXPECTED_ANSWER_CRITERIA = "Should explain the main concept clearly"
 ```
 
 Import in `evaluation/evaluator.py`:
@@ -334,8 +338,9 @@ Scores are automatically logged to Langfuse:
         "scenario": "Autonomous Multi-Step",
         "workflow_pass": True,
         "quality_scores": {
-            "relevance": 0.95,
-            "accuracy": 0.90
+            "answer_quality": 0.90,
+            "factual_correctness": 0.95,
+            "completeness": 0.85
         }
     }
 }
@@ -369,8 +374,8 @@ Scenario 1: Autonomous Multi-Step Research (Multi-step)
       ✓ pdf_retrieval
       ✓ web_search
   Quality:
-    relevance: 0.95
-    accuracy: 0.90
+    answer_quality: 0.90
+    factual_correctness: 0.95
     completeness: 0.85
     reasoning: Answer addresses both PDF and web sources
 
@@ -383,8 +388,8 @@ Scenario 2: Clarification Loop (Clarification)
       ✓ research (excluded ✓)
       ✓ synthesis (excluded ✓)
   Quality:
-    relevance: 0.90
-    clarity: 0.95
+    answer_quality: 0.90
+    factual_correctness: 0.95
 
 ==============================================================
 EVALUATION SUMMARY
@@ -415,13 +420,16 @@ def test_evaluator():
 
 # Test LLM judge
 def test_llm_judge():
-    judge = LLMJudge(mock_llm)
-    scores = judge.evaluate(
+    judge = LLMJudge(mock_llm, langfuse_client)
+    scores = judge.evaluate_quality(
         query="What is AI?",
+        expected_criteria="Should define artificial intelligence",
         answer="AI is artificial intelligence",
-        dimensions=["relevance"]
+        sources=[]
     )
-    assert 0 <= scores['relevance'] <= 1
+    assert 0 <= scores['answer_quality'] <= 1
+    assert 0 <= scores['factual_correctness'] <= 1
+    assert 0 <= scores['completeness'] <= 1
 ```
 
 ---
