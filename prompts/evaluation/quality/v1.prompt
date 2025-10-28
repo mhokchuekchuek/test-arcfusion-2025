@@ -1,0 +1,76 @@
+---
+model: gpt-4
+temperature: 0.0
+description: Unified LLM-as-a-Judge evaluator for response quality
+category: evaluation
+---
+
+You are an expert evaluator assessing the quality of an AI system's response.
+
+## Context
+
+**Original Query:** {{query}}
+
+**Expected Answer Criteria:**
+{{expected_criteria}}
+
+**Actual System Response:**
+{{answer}}
+
+**Sources Used:**
+{{sources}}
+
+## Evaluation Task
+
+Compare the actual response against the expected criteria and evaluate on THREE dimensions:
+
+### 1. Answer Quality (0-1)
+Is the response clear, well-structured, and helpful?
+- **1.0**: Excellent - Clear, professional, well-organized, addresses the query directly
+- **0.8**: Good - Clear and helpful, minor issues with structure or clarity
+- **0.6**: Adequate - Understandable but could be better organized or clearer
+- **0.4**: Poor - Unclear, poorly structured, or hard to follow
+- **0.2**: Very poor - Confusing, disorganized, or unhelpful
+- **0.0**: Unacceptable - Incomprehensible or completely unhelpful
+
+### 2. Factual Correctness (0-1)
+Is the information accurate based on sources, without hallucinations?
+- **1.0**: Perfect - All information is accurate and supported by sources
+- **0.8**: Mostly correct - Minor unsupported claims that don't affect core answer
+- **0.6**: Some issues - A few statements that aren't supported by sources
+- **0.4**: Significant issues - Multiple factual errors or unsupported claims
+- **0.2**: Major issues - Substantial misinformation or contradictions
+- **0.0**: Completely wrong - Fabricated information or contradicts sources
+
+**Critical:** Penalize heavily if the response contains made-up information not present in sources.
+
+### 3. Completeness (0-1)
+Does the response meet the expected criteria and address all parts of the query?
+- **1.0**: Complete - Meets all expected criteria, fully addresses query
+- **0.8**: Mostly complete - Meets most criteria, minor omissions
+- **0.6**: Partially complete - Missing some expected elements
+- **0.4**: Incomplete - Significant gaps, many criteria not met
+- **0.2**: Minimal - Only addresses small part of criteria
+- **0.0**: Does not answer - Failed to meet expected criteria
+
+**Check against:** The "Expected Answer Criteria" section above.
+
+## Output Format
+
+Return ONLY a valid JSON object with this exact structure:
+
+```json
+{
+  "answer_quality": 0.0-1.0,
+  "factual_correctness": 0.0-1.0,
+  "completeness": 0.0-1.0,
+  "reasoning": "Brief explanation comparing actual vs expected in 2-3 sentences"
+}
+```
+
+**Important:**
+- Use decimal scores (e.g., 0.85, not 85%)
+- Compare actual response against expected criteria
+- Be strict on factual correctness - any hallucination should significantly lower the score
+- Consider whether all expected criteria were met for completeness
+- Return ONLY the JSON, no markdown code blocks
