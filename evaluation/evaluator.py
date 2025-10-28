@@ -5,6 +5,7 @@ Integrated with Langfuse for score tracking and quality monitoring.
 """
 
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -244,8 +245,11 @@ class Evaluator:
             logger.error(f"Evaluation failed: {e}", exc_info=True)
             return None
 
-    def run_all_scenarios(self) -> List[Dict[str, Any]]:
+    def run_all_scenarios(self, waiting_time: int = 30) -> List[Dict[str, Any]]:
         """Run all evaluation scenarios with workflow validation + quality evaluation.
+
+        Args:
+            waiting_time: Seconds to wait for Langfuse trace submission (default: 30)
 
         Returns:
             List of evaluation results with workflow and quality scores
@@ -253,6 +257,8 @@ class Evaluator:
         Example:
             >>> evaluator = Evaluator()
             >>> results = evaluator.run_all_scenarios()
+            >>> # Or with custom wait time
+            >>> results = evaluator.run_all_scenarios(waiting_time=20)
             >>> for result in results:
             ...     print(f"{result['scenario']}: workflow={result['workflow']['pass']}, quality={result['quality']}")
         """
@@ -311,5 +317,18 @@ class Evaluator:
             f"Evaluation complete: {successful} succeeded, {failed} failed "
             f"(workflow: {workflow_passed}/{len(results)} passed)"
         )
+
+        # Flush Langfuse traces to ensure they're submitted before script exits
+        logger.info(f"Flushing Langfuse traces (waiting {waiting_time}s for submission)...")
+        try:
+            if self.langfuse_client:
+                self.langfuse_client.flush()
+                logger.info("Langfuse client flushed successfully")
+        except Exception as e:
+            logger.warning(f"Failed to flush Langfuse client: {e}")
+
+        # Wait for async traces to be fully submitted
+        time.sleep(waiting_time)
+        logger.info("Trace submission wait complete")
 
         return results
