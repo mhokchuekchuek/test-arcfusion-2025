@@ -282,11 +282,11 @@ Use **Redis** for both session-based conversation memory AND LangGraph checkpoin
 ### Alternatives Considered
 
 
-| Use Case            | Alternative    | Why Not?                                               |
-| --------------------- | ---------------- | -------------------------------------------------------- |
-| **LangGraph State** | PostgreSQL     | Slower than Redis, overkill for temporary state        |
-| **LangGraph State** | In-memory dict | Lost on restart, not shared across API instances       |
-| **Session Memory**  | MongoDB        | Slower than Redis for simple key-value storage         |
+| Use Case            | Alternative    | Why Not?                                         |
+| --------------------- | ---------------- | -------------------------------------------------- |
+| **LangGraph State** | PostgreSQL     | Slower than Redis, overkill for temporary state  |
+| **LangGraph State** | In-memory dict | Lost on restart, not shared across API instances |
+| **Session Memory**  | MongoDB        | Slower than Redis for simple key-value storage   |
 
 ### Trade-offs
 
@@ -363,9 +363,9 @@ Use **IBM Docling** for PDF text extraction.
 ### Alternatives Considered
 
 
-| Alternative                     | Pros                              | Cons                                    | Why Not?                                    |
-| --------------------------------- | ----------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| **PyPDF2**                      | Lightweight, simple API           | Poor quality for complex layouts        | Struggles with multi-column academic papers |
+| Alternative | Pros                    | Cons                             | Why Not?                                    |
+| ------------- | ------------------------- | ---------------------------------- | --------------------------------------------- |
+| **PyPDF2**  | Lightweight, simple API | Poor quality for complex layouts | Struggles with multi-column academic papers |
 
 ### Trade-offs
 
@@ -429,11 +429,11 @@ Use **Tavily** AI-optimized web search API.
 ### Alternatives Considered
 
 
-| Alternative           | Pros                        | Cons                                              | Why Not?                         |
-| ----------------------- | ----------------------------- | --------------------------------------------------- | ---------------------------------- |
-| **Google Search API** | Most comprehensive          | Requires custom scraping, quota limits, expensive | Need to scrape results ourselves |
-| **Bing Search API**   | Microsoft-backed            | Similar to Google, requires scraping              | Extra scraping layer needed      |
-| **Serper API**        | Good alternative to Tavily  | No AI Assisted                       | Similar, Tavily more AI-focused  |
+| Alternative           | Pros                       | Cons                                              | Why Not?                         |
+| ----------------------- | ---------------------------- | --------------------------------------------------- | ---------------------------------- |
+| **Google Search API** | Most comprehensive         | Requires custom scraping, quota limits, expensive | Need to scrape results ourselves |
+| **Bing Search API**   | Microsoft-backed           | Similar to Google, requires scraping              | Extra scraping layer needed      |
+| **Serper API**        | Good alternative to Tavily | No AI Assisted                                    | Similar, Tavily more AI-focused  |
 
 ### Trade-offs
 
@@ -499,10 +499,10 @@ Use **Langfuse** for LLM observability and prompt management.
 ### Alternatives Considered
 
 
-| Alternative          | Pros                         | Cons                                            | Why Not?                                   |
-| ---------------------- | ------------------------------ | ------------------------------------------------- | -------------------------------------------- |
-| **LangSmith**        | LangChain-native             | LangChain-specific, tightly coupled             | Want provider-agnostic solution            |
-| **Weights & Biases** | ML experiment tracking       | Not LLM-specific, heavier setup                 | Designed for model training, not inference |
+| Alternative          | Pros                   | Cons                                | Why Not?                                   |
+| ---------------------- | ------------------------ | ------------------------------------- | -------------------------------------------- |
+| **LangSmith**        | LangChain-native       | LangChain-specific, tightly coupled | Want provider-agnostic solution            |
+| **Weights & Biases** | ML experiment tracking | Not LLM-specific, heavier setup     | Designed for model training, not inference |
 
 ### Trade-offs
 
@@ -519,6 +519,20 @@ Use **Langfuse** for LLM observability and prompt management.
 - Additional service to run and monitor
 - Less mature than general APM tools
 - Requires explicit instrumentation in code
+
+### Example:
+
+Cost Tracking
+
+![](assets/20251029_051403_tracing.png)
+
+**Prompt**
+
+![](assets/20251029_051547_prompt.png)
+
+**Session Tracing**
+
+![](assets/20251029_051718_session_tracing.png)
 
 ### Implementation
 
