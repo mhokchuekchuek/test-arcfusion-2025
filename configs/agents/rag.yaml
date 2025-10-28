@@ -1,0 +1,21 @@
+# RAG (Retrieval-Augmented Generation) Configuration
+# Override any value via environment variables using RAG__ prefix
+rag:
+  llm:
+    provider: litellm # LLM provider for RAG system
+    completion_model: rag-dotprompt # Model for answer generation
+    embedding_model: text-embedding-3-small # Model for embeddings
+    temperature: 0.7
+    max_tokens: 2000
+    # Default number of documents to retrieve from vector store
+    default_top_k: 1000
+    # Maximum context length in tokens (combined docs + history)
+    max_context_length: 4000
+
+  retrieval:
+    min_similarity_score: 0.5 # Minimum cosine similarity threshold (0-1, where 1=identical)
+    # Scores below this will be filtered out or marked as low quality
+    # Typical ranges: 0.7+=high quality, 0.5-0.7=medium, <0.5=low
+
+  vectordb:
+    provider: qdrant # Vector database provider for document retrieval

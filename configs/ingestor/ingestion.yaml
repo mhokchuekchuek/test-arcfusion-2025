@@ -1,0 +1,48 @@
+# PDF Ingestion Pipeline Configuration
+# Override any value via environment variables (e.g., INGESTION__DIRECTORY)
+
+# ==============================================================================
+# Ingestion Processor
+# ==============================================================================
+ingestion:
+  # Directory Settings
+  directory: data/pdfs/papers # Directory containing PDF files to ingest
+  file_type: pdf # File extension to process
+
+  # Text Chunking Settings
+  chunk_size: 512 # Size of text chunks (in characters)
+  chunk_overlap: 50 # Overlap between consecutive chunks (in characters)
+
+  # Processing Settings
+  batch_size: 32 # Batch size for embedding generation
+
+  # PDF Parser Configuration
+  parser:
+    provider: docling # PDF parser provider (docling)
+
+  # Text Chunker Configuration
+  chunker:
+    provider: recursive # Text chunker provider (recursive)
+    # Custom separators (optional, uses LangChain defaults if not specified)
+    # separators:
+    #   - "\n\n"  # Paragraph breaks
+    #   - "\n"    # Line breaks
+    #   - ". "    # Sentences
+    #   - " "     # Words
+    #   - ""      # Characters
+
+    # LLM Configuration (for embeddings)
+  llm:
+    provider: litellm # LLM provider
+    proxy_url: http://localhost:4000 # LiteLLM proxy URL (for local ingestion outside Docker)
+    api_key: sk-1234 # LiteLLM master key (from .env: LITELLM_MASTER_KEY)
+    embedding_model: text-embedding-3-small # Embedding model
+
+  # Vector Store Configuration
+  vectordb:
+    provider: qdrant # Vector store provider
+    host: localhost # Qdrant host (for local ingestion outside Docker)
+    port: 6333 # Qdrant port
+    collection_name: pdf_documents # Collection to store embeddings
+    vector_size: 1536 # Embedding vector dimension (gemini-embedding-001: 768, ada-002: 1536)
+    create_collection: true # Auto-create collection if not exists

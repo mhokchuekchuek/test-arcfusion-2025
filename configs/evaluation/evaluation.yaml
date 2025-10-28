@@ -1,0 +1,27 @@
+# Evaluation System Configuration
+# Override any value via environment variables (e.g., EVALUATION__API_URL)
+
+# ==============================================================================
+# Evaluation Runner
+# ==============================================================================
+evaluation:
+  # API URL for the agent system
+  api_url: http://localhost:8000 # Change to http://api:8000 when running in Docker
+
+  # LLM Configuration (for LLM-as-a-Judge)
+  llm:
+    provider: litellm # LLM provider
+    proxy_url: http://localhost:4000 # LiteLLM proxy URL
+    api_key: sk-1234 # LiteLLM master key (from .env: LITELLM_MASTER_KEY)
+    model: gpt-4 # Model for evaluation
+    temperature: 0.0 # Temperature for deterministic scoring
+    max_tokens: 500 # Max tokens for evaluation response
+
+  # Observability (Langfuse)
+  observability:
+    langfuse:
+      enabled: true # Enable/disable Langfuse observability
+      provider: langfuse # Provider name for selector
+      public_key: null # Set via EVALUATION__OBSERVABILITY__LANGFUSE__PUBLIC_KEY or from LANGFUSE_PUBLIC_KEY
+      secret_key: null # Set via EVALUATION__OBSERVABILITY__LANGFUSE__SECRET_KEY or from LANGFUSE_SECRET_KEY
+      host: https://cloud.langfuse.com # Cloud Langfuse (change to http://langfuse:3000 for local)

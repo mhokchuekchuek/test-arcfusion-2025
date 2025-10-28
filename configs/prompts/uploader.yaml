@@ -1,0 +1,30 @@
+# Prompt Uploader Configuration
+# Uploads .prompt files to Langfuse for centralized prompt management
+# Override any value via environment variables (e.g., PROMPTS__DIRECTORY)
+
+# ==============================================================================
+# Prompt Uploader
+# ==============================================================================
+prompts:
+  # Directory Settings
+  directory: prompts # Directory containing .prompt files
+  file_pattern: "*.prompt" # File pattern to match
+
+  # Versioning Settings
+  version: v1 # Prompt version tag
+  label: dev # Prompt label (dev, staging, production)
+
+  # Upload Settings
+  batch_upload: true # Upload all prompts in batch
+  overwrite_existing: true # Overwrite existing prompts with same name
+
+# ==============================================================================
+# Observability Configuration (for local use)
+# ==============================================================================
+observability:
+  langfuse:
+    enabled: true
+    provider: langfuse
+    public_key: null # Set via LANGFUSE_PUBLIC_KEY env var
+    secret_key: null # Set via LANGFUSE_SECRET_KEY env var
+    host: https://cloud.langfuse.com # Langfuse host (localhost for local upload script)

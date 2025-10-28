@@ -1,0 +1,65 @@
+# ==============================================================================
+# API Server
+# ==============================================================================
+api:
+  host: 0.0.0.0 # Server host (0.0.0.0 for all interfaces)
+  port: 8000 # Server port
+  reload: false # Auto-reload on code changes (dev only)
+  cors_origins:
+  # Allowed CORS origins
+  - "*"
+
+# ==============================================================================
+# LLM Configuration
+# ==============================================================================
+llm:
+  proxy_url: http://litellm-proxy:4000 # LiteLLM proxy URL
+
+# ==============================================================================
+# API Keys (non-LLM)
+# ==============================================================================
+# LLM API keys use standard names (ANTHROPIC_API_KEY, OPENAI_API_KEY)
+# Other service API keys use nested structure
+api_keys:
+  litellm_proxy_key: sk-1234 # LiteLLM master key (set via API_KEYS__LITELLM_PROXY_KEY)
+  tavily_api_key: null # Set via API_KEYS__TAVILY_API_KEY
+  serp_api_key: null # Set via API_KEYS__SERP_API_KEY
+
+# ==============================================================================
+# Observability - Langfuse Configuration
+# ==============================================================================
+observability:
+  langfuse:
+    enabled: true # Enable/disable Langfuse observability
+    provider: langfuse # Provider name for selector
+    public_key: null # Set via OBSERVABILITY__LANGFUSE__PUBLIC_KEY or from LANGFUSE_PUBLIC_KEY
+    secret_key: null # Set via OBSERVABILITY__LANGFUSE__SECRET_KEY or from LANGFUSE_SECRET_KEY
+    host: https://cloud.langfuse.com # Cloud Langfuse (change to http://langfuse:3000 for local)
+
+# ==============================================================================
+# Logging
+# ==============================================================================
+logging:
+  level: DEBUG # Options: DEBUG, INFO, WARNING, ERROR
+  format: json # Options: json, text
+
+# ==============================================================================
+# Memory Database Configuration
+# ==============================================================================
+memorydb:
+  redis:
+    host: redis
+    port: 6379
+    password: null # Set via MEMORYDB__REDIS__PASSWORD
+    db: 0
+    session_ttl: 86400 # Session TTL in seconds (24 hours)
+
+# ==============================================================================
+# Vector Database Configuration
+# ==============================================================================
+vectordb:
+  qdrant:
+    host: qdrant # Qdrant host
+    port: 6333 # Qdrant port
+    collection_name: pdf_documents # Collection name
+    vector_size: 1536 # Vector dimension

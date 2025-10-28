@@ -1,0 +1,66 @@
+# Multi-Agent LangGraph Configuration
+# References models defined in configs/litellm/proxy_config.yaml
+
+# Master Orchestrator - Intent classification and routing
+orchestrator:
+  name: orchestrator # Agent trace name in Langfuse
+  model: gpt-4-turbo # Uses prompts/agent/orchestrator/v1.prompt
+  temperature: 0.3 # Lower for consistent routing decisions
+  max_history: 10 # Max messages to include in context (prevents token overflow)
+  max_clarifications: 2 # Maximum consecutive clarification turns before forcing research (prevents infinite loops)
+  prompt:
+    provider: langfuse # Prompt provider (langfuse, litellm, local)
+    id: agent_orchestrator # Matches Langfuse prompt name (from prompts/agent/orchestrator/v1.prompt)
+    version: null # Specific version (null = latest for label)
+    environment: dev # Environment label (dev, staging, production)
+
+# Research Agent - ReAct planning with tool execution
+research:
+  name: research # Agent trace name in Langfuse
+  model: gpt-4-turbo # Uses prompts/agent/research/v1.prompt
+  temperature: 0.7 # Balanced for reasoning
+  max_iterations: 10 # Prevent runaway loops
+  max_history: 10 # Max messages to include in context (prevents token overflow)
+  prompt:
+    provider: langfuse
+    id: agent_research # Matches Langfuse prompt name (from prompts/agent/research/v1.prompt)
+    version: null
+    environment: dev
+
+# Clarification Agent - Handle vague/ambiguous queries
+clarification:
+  name: clarification # Agent trace name in Langfuse
+  model: gpt-4-turbo # Uses prompts/agent/clarification/v1.prompt
+  temperature: 0.5
+  max_history: 10 # Max messages to include in context (prevents token overflow)
+  prompt:
+    provider: langfuse
+    id: agent_clarification # Matches Langfuse prompt name
+    version: null
+    environment: dev
+
+# Synthesis Agent - Format final answers
+synthesis:
+  name: synthesis # Agent trace name in Langfuse
+  model: gpt-4-turbo # Uses prompts/agent/synthesis/v1.prompt
+  temperature: 0.7
+  max_history: 10 # Max messages to include in context (prevents token overflow)
+  prompt:
+    provider: langfuse
+    id: agent_synthesis # Matches Langfuse prompt name
+    version: null
+    environment: dev
+
+# Graph execution limits
+graph:
+  max_total_iterations: 20 # Global safety limit
+  timeout_seconds: 60 # Max execution time
+
+# Tool configurations
+tools:
+  pdf_retrieval:
+    top_k: 100 # Documents to retrieve per query
+
+  web_search:
+    max_results: 100 # Web results per search
+    provider: tavily

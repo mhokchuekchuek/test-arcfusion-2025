@@ -1,0 +1,114 @@
+# LiteLLM Proxy Configuration
+# This file configures the LiteLLM proxy server for centralized LLM management
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+
+# ==============================================================================
+# Model List - Define available models with aliases
+# ==============================================================================
+model_list:
+# Anthropic Claude Models (for completion/chat)
+- model_name: claude-3-5-sonnet
+  litellm_params:
+    model: claude-3-5-sonnet-20241022
+    api_key: os.environ/ANTHROPIC_API_KEY
+
+# OpenAI Models (for completion/chat)
+- model_name: gpt-4-turbo
+  litellm_params:
+    model: gpt-4-turbo-preview
+    api_key: os.environ/OPENAI_API_KEY
+    max_tokens: 4096 # GPT-4 Turbo max completion tokens (4096)
+  model_info:
+    tpm: 80000 # Tokens per minute limit
+    rpm: 500 # Requests per minute limit
+
+- model_name: gpt-4
+  litellm_params:
+    model: gpt-4
+    api_key: os.environ/OPENAI_API_KEY
+    max_tokens: 4000 # Limit output tokens
+  model_info:
+    tpm: 40000 # Tokens per minute limit (10k default, reduced for safety)
+    rpm: 500 # Requests per minute limit
+
+# Google Gemini Models (for completion/chat)
+- model_name: gemini-1.5-flash
+  litellm_params:
+    model: gemini/gemini-1.5-flash
+    api_key: os.environ/GEMINI_API_KEY
+
+# Embedding Models
+- model_name: text-embedding-3-small
+  litellm_params:
+    model: text-embedding-3-small
+    api_key: os.environ/OPENAI_API_KEY
+
+- model_name: text-embedding-ada-002
+  litellm_params:
+    model: text-embedding-ada-002
+    api_key: os.environ/OPENAI_API_KEY
+
+# Google Gemini Embeddings
+- model_name: gemini-embedding-001
+  litellm_params:
+    model: gemini/embedding-001
+    api_key: os.environ/GEMINI_API_KEY
+
+# ==============================================================================
+# LiteLLM Settings - Caching, callbacks, retries, prompts
+# ==============================================================================
+litellm_settings:
+  # Prompt management directory
+  global_prompt_directory: "./prompts"
+
+  # Enable Redis caching (DISABLED FOR TESTING)
+  cache: false
+  # cache_params:
+  #   type: redis # Options: redis, redis-semantic, s3
+  #   # Redis connection (from environment variables)
+  #   host: os.environ/REDIS_HOST
+  #   port: os.environ/REDIS_PORT
+  #   password: os.environ/REDIS_PASSWORD # Optional
+  #   # Cache TTL (1 hour)
+  #   ttl: 3600
+  #   # Supported operations to cache
+  #   supported_call_types:
+  #   - completion
+  #   - acompletion
+  #   - embedding
+  #   - aembedding
+
+  # Retry configuration
+  num_retries: 3
+  request_timeout: 600 # 10 minutes for long requests
+
+  # Drop unsupported params instead of erroring
+  drop_params: true
+  # Success/failure callbacks (optional - for logging/metrics)
+  # success_callback: ["langfuse"]
+  # failure_callback: ["langfuse"]
+
+  # ==============================================================================
+  # General Settings - Server configuration
+  # ==============================================================================
+general_settings:
+  # Master key for API authentication
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+  # Database for storing model configs and API keys
+  database_url: os.environ/SQLITE_URL
+
+  # CORS settings
+  allowed_origins: [ "*" ] # Adjust for production
+
+  # Health check settings
+  health_check: true
+  health_check_interval: 300 # 5 minutes
+
+# ==============================================================================
+# Router Settings (optional) - For load balancing across multiple deployments
+# ==============================================================================
+router_settings:
+  routing_strategy: simple-shuffle # Options: simple-shuffle, least-busy, usage-based-routing
+  # num_retries: 3
+  # timeout: 30
