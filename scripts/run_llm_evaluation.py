@@ -31,10 +31,19 @@ def main():
         logger.info("Starting evaluation process")
 
         # Initialize evaluator (auto-loads config)
+        print("Initializing evaluator...")
         evaluator = Evaluator()
+        print(f"✓ Evaluator initialized")
+        print(f"  API: {evaluator.config.evaluation.api_url}")
+        print(f"  Judge Model: {evaluator.config.evaluation.llm.model}")
+        print(f"  Langfuse: {evaluator.config.evaluation.observability.langfuse.host}\n")
+
+        # Get waiting time (default 30s)
+        waiting_time = 30
+        print(f"Running all scenarios (Langfuse flush wait: {waiting_time}s)...\n")
 
         # Run all scenarios
-        results = evaluator.run_all_scenarios()
+        results = evaluator.run_all_scenarios(waiting_time=waiting_time)
 
         # Print summary
         print("\n" + "="*60)
