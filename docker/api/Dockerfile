@@ -19,10 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY tools/ ./tools/
-COPY ingestor/ ./ingestor/
 COPY src/ ./src/
 COPY configs/ ./configs/
-COPY tests/ ./tests/
 
 # Expose FastAPI port
 EXPOSE 8000
