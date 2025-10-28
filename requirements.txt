@@ -1,42 +1,40 @@
 # Core Framework
-fastapi
-uvicorn[standard]
-pydantic
-dynaconf
+fastapi==0.115.14
+uvicorn[standard]==0.29.0
+pydantic==2.12.3
+dynaconf==3.2.12
 
 # LangChain
-langchain
-langchain-anthropic
-langchain-openai
-langchain-text-splitters
-langgraph
-langgraph-checkpoint-redis
+langchain==1.0.2
+langchain-anthropic==1.0.0
+langchain-openai==1.0.1
+langchain-text-splitters==1.0.0
+langgraph==1.0.1
+langgraph-checkpoint-redis==0.1.2
 
 # LLM Providers
-anthropic
-openai
-litellm
+litellm==1.78.7
 
 # Observability & Prompt Management
-langfuse
+langfuse==3.8.1
 
 # Vector Store
-faiss-cpu
-qdrant-client
+faiss-cpu==1.12.0
+qdrant-client==1.15.1
 
 # PDF Processing
-docling
+docling==2.58.0
 
 # Web Search
-tavily-python
+tavily-python==0.7.12
 
 # Utilities
-python-dotenv
-redis
+python-dotenv==1.1.1
+redis==6.4.0
 
 # Development
-pytest
-pytest-asyncio
-black
-flake8
-mypy
+pytest==8.4.2
+pytest-asyncio==1.2.0
+black==25.9.0
+flake8==7.3.0
+mypy==1.18.2
