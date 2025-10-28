@@ -1,0 +1,42 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+pydantic
+dynaconf
+
+# LangChain
+langchain
+langchain-anthropic
+langchain-openai
+langchain-text-splitters
+langgraph
+langgraph-checkpoint-redis
+
+# LLM Providers
+anthropic
+openai
+litellm
+
+# Observability & Prompt Management
+langfuse
+
+# Vector Store
+faiss-cpu
+qdrant-client
+
+# PDF Processing
+docling
+
+# Web Search
+tavily-python
+
+# Utilities
+python-dotenv
+redis
+
+# Development
+pytest
+pytest-asyncio
+black
+flake8
+mypy
