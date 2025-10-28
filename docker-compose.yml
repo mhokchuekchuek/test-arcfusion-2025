@@ -1,0 +1,139 @@
+services:
+  # ==============================================================================
+  # Redis - Caching for LiteLLM proxy and session memory
+  # ==============================================================================
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: pdf-chat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pdf-chat-network
+
+  # ==============================================================================
+  # RedisInsight - Redis GUI for monitoring and debugging
+  # ==============================================================================
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: pdf-chat-redisinsight
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    networks:
+      - pdf-chat-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ==============================================================================
+  # PostgreSQL - Database for LiteLLM proxy
+  # ==============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: pdf-chat-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - pdf-chat-network
+
+  # ==============================================================================
+  # Qdrant - Vector database for semantic search
+  # ==============================================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: pdf-chat-qdrant
+    ports:
+      - "6333:6333" # REST API
+      - "6334:6334" # gRPC (optional)
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - pdf-chat-network
+
+  # ==============================================================================
+  # LiteLLM Proxy - Centralized LLM gateway with caching
+  # ==============================================================================
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: pdf-chat-litellm-proxy
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./configs/litellm/proxy_config.yaml:/app/config.yaml:ro
+      - ./prompts:/app/prompts:ro
+    env_file:
+      - .env
+    command:
+      ["--config", "/app/config.yaml", "--port", "4000", "--detailed_debug"]
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - pdf-chat-network
+    restart: unless-stopped
+
+  # ==============================================================================
+  # API - FastAPI application with agents and graph
+  # ==============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: pdf-chat-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Data directories
+      - ./pdfs:/app/pdfs:ro
+      # Source code mounts (for development - changes reflect immediately)
+      - ./src:/app/src
+      - ./tools:/app/tools
+      - ./ingestor:/app/ingestor
+      - ./configs:/app/configs:ro
+      - ./tests:/app/tests
+    env_file:
+      - .env
+    environment:
+      # Service URLs (container-to-container communication)
+      - LITELLM_PROXY_URL=http://litellm-proxy:4000
+      - QDRANT_URL=http://qdrant:6333
+    depends_on:
+      - litellm-proxy
+      - qdrant
+      - redis
+    networks:
+      - pdf-chat-network
+    restart: unless-stopped
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  pdf-chat-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes - For data persistence
+# ==============================================================================
+volumes:
+  redis_data:
+    driver: local
+  redisinsight_data:
+    driver: local
+  postgres_data:
+    driver: local
+  qdrant_storage:
+    driver: local
