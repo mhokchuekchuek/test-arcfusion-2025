@@ -1001,6 +1001,118 @@ def web_search_with_rag(query: str):
 
 ---
 
+#### ⭐ Temporal Query Awareness for Web Search
+
+**Problem**: System returns outdated information when users ask temporal queries like "latest update from OpenAI last month"
+
+**Current Issues**:
+
+1. **Tavily search lacks temporal filtering**:
+   - Only passes `query` and `max_results` parameters
+   - No `time_range` parameter (accepts "day", "week", "month", "year")
+   - Results sorted by relevance, not recency
+   - Example: Query "latest OpenAI update" returns 2023 news articles
+
+2. **Research agent has no temporal awareness**:
+   - Prompt doesn't include current date context
+   - No instructions on handling "last month", "recent", "latest"
+   - Can't interpret relative time expressions
+
+3. **No date context passed to agents**:
+   - Agents receive messages but no current date
+   - Can't distinguish between "last month" in 2023 vs 2025
+
+**Proposed Solution**:
+
+1. **Add temporal parameters to Tavily client** (`tools/llm/websearch/tavily/main.py`):
+
+```python
+def search(
+    self,
+    query: str,
+    max_results: int = 5,
+    time_range: Optional[str] = None,  # "day", "week", "month", "year"
+    search_depth: str = "basic"         # "basic" or "advanced"
+) -> list[dict[str, Any]]:
+    """Search with temporal filtering."""
+    response = self.client.search(
+        query=query,
+        max_results=max_results,
+        time_range=time_range,  # Filter by recency
+        search_depth=search_depth
+    )
+```
+
+2. **Add current date to research prompt** (`prompts/agent/research/v1.prompt`):
+
+```yaml
+---
+model: gpt-4
+temperature: 0.7
+---
+# Context
+Current date: {{ current_date }}
+
+# Your Job
+When users ask about "recent", "latest", "last month", etc.:
+1. Use the current date above to interpret temporal queries
+2. For Tavily searches, specify time range in query
+3. Prioritize and report the most recent information
+```
+
+3. **Inject current date when compiling prompts** (`src/agents/research.py`):
+
+```python
+from datetime import datetime
+
+system_prompt = prompt_obj.compile(
+    current_date=datetime.now().strftime("%Y-%m-%d")
+)
+```
+
+4. **Enhance web search tool description** (`src/agents/tools/web_search.py`):
+
+```python
+description: str = """Search the web for current information.
+
+For temporal queries ("last month", "recent", "latest"):
+- Specify time range in your query: "openai updates october 2025"
+- Results will be filtered to recent timeframe
+
+Use this tool when:
+- Recent events or releases ("this month", "latest", "current")
+- Information not in academic papers
+...
+"""
+```
+
+**Observed Issue Example**:
+
+```bash
+User Query: "what is latest update from openai last month"
+Current Date: 2025-10-29
+
+System Response (incorrect):
+- Returns November 2023 information
+- Sam Altman removal from OpenAI board
+- GPT-3.5-Turbo update (2023)
+
+Root Cause:
+- Tavily searched without time filter → all results by relevance
+- Agent constructed generic query "latest update from openai"
+- 2023 articles ranked high due to relevance (major news events)
+- Agent had no date context to detect outdated results
+```
+
+**Benefits**:
+
+- ✅ Accurate temporal query handling
+- ✅ Always return recent information when requested
+- ✅ Better user trust (no outdated information)
+- ✅ Improved agent reasoning about time-sensitive queries
+
+---
+
 #### ⭐ Production-Scale Kubernetes Architecture
 
 **Problem**: Single-instance services can't handle high traffic or auto-scale
@@ -1059,17 +1171,18 @@ spec:
 
 **🔴 High Priority** (Biggest Impact):
 
-1. **Caching System Fix** - 30-50% cost reduction
-2. **Web Search RAG** - Prevents context overflow issues
-3. **Query Decomposition** - Better handling of complex queries
+1. **Temporal Query Awareness** - Fixes incorrect temporal results (user trust issue)
+2. **Caching System Fix** - 30-50% cost reduction
+3. **Web Search RAG** - Prevents context overflow issues
+4. **Query Decomposition** - Better handling of complex queries
 
 **🟡 Medium Priority**:
-4. **Semantic Chunking** - Improved retrieval quality
-5. **Model Experiment Suite** - Data-driven optimization
-6. **Graph RAG** - Better entity/keyword retrieval
+5. **Semantic Chunking** - Improved retrieval quality
+6. **Model Experiment Suite** - Data-driven optimization
+7. **Graph RAG** - Better entity/keyword retrieval
 
 **🟢 Low Priority** (Future Scale):
-7. **Kubernetes Architecture** - Only needed at scale (1000+ users)
+8. **Kubernetes Architecture** - Only needed at scale (1000+ users)
 
 ---
 

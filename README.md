@@ -300,34 +300,41 @@ Based on the retrospective analysis in our architecture documentation, here are 
 
 ### High Priority Improvements
 
-**1. Caching System Fix** (30-50% cost reduction)
+**1. Temporal Query Awareness** (Fixes incorrect temporal results - user trust issue)
+- Current: System returns 2023 information when asked about "latest update from OpenAI last month"
+- Root Cause: Tavily searches without time filters, agents have no date context
+- Fix: Add `time_range` parameter to Tavily, inject current date into agent prompts
+- Benefit: Accurate handling of "recent", "latest", "last month" queries
+- Priority: Critical for user trust - returning 2-year-old information as "latest" breaks credibility
+
+**2. Caching System Fix** (30-50% cost reduction)
 - Current: Tried LiteLLM cache but found bugs with different queries returning same cached result
 - Fix: Review cache key generation, implement semantic cache as alternative
 - Multi-level caching: L1 (exact match), L2 (semantic similarity), L3 (LLM response)
 
-**2. Web Search RAG Enhancement** (Prevents context overflow)
+**3. Web Search RAG Enhancement** (Prevents context overflow)
 - Current: Web search results can be very long, causing important context to be lost
 - Fix: Apply RAG to web results - chunk, embed, retrieve only relevant parts
 - Benefit: Focus on relevant web content, avoid context overflow
 
-**3. Query Decomposition** (Better handling of complex queries)
+**4. Query Decomposition** (Better handling of complex queries)
 - Current: Long/complex queries may lose focus
 - Fix: Break complex queries into 3-5 focused sub-questions, RAG each separately, synthesize
 - Benefit: Better handling of multi-part questions
 
 ### Medium Priority Improvements
 
-**4. Semantic Chunking** (Improved retrieval quality)
+**5. Semantic Chunking** (Improved retrieval quality)
 - Current: Fixed token-based chunking loses semantic coherence
 - Fix: Use sentence embeddings to identify natural breakpoints, keep related sentences together
 - Tools: semantic-text-splitter, custom embedding-based chunker
 
-**5. Model Experiment Suite** (Data-driven optimization)
+**6. Model Experiment Suite** (Data-driven optimization)
 - Current: Hard to compare performance when changing configurations
 - Fix: Create experiment tracking to compare RAG approaches, models, chunking strategies, retrieval parameters
 - Benefit: A/B testing and data-driven decision making
 
-**6. Graph RAG Implementation** (Better entity/keyword retrieval)
+**7. Graph RAG Implementation** (Better entity/keyword retrieval)
 - Current: Traditional vector RAG struggles with entity/relationship queries
 - Fix: Build knowledge graph from PDFs, combine graph traversal + vector search
 - Tools: Neo4j, LangChain Graph modules, Microsoft GraphRAG
@@ -335,7 +342,7 @@ Based on the retrospective analysis in our architecture documentation, here are 
 
 ### Production-Scale Enhancements
 
-**7. Kubernetes Architecture** (Only needed at 1000+ users)
+**8. Kubernetes Architecture** (Only needed at 1000+ users)
 - Horizontal Pod Autoscaling for FastAPI and LiteLLM
 - StatefulSets for Redis (clustered) and Qdrant (sharded)
 - Ingress Controller for load balancing
