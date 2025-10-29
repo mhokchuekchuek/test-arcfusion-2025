@@ -40,9 +40,15 @@ Ask questions using multi-agent RAG.
 ### Example
 
 ```bash
+# Without session_id (auto-generated)
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "What is DAIL-SQL?"}'
+
+# With specific session_id
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the main contribution of Zhang et al. 2024?", "session_id": "user-session-123"}'
 ```
 
 **Code:** `src/apis/routes/chat.py:50`

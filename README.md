@@ -74,13 +74,26 @@ python scripts/ingest.py
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the main contribution of Zhang et al. 2024?"}'
+  -d '{"message": "What is the main contribution of Zhang et al. 2024?", "session_id": "my-session"}'
 ```
 
 **Example queries:**
-- PDF search: `"What prompting techniques achieved highest accuracy?"`
-- Web fallback: `"What did OpenAI announce this week?"`
-- Clarification: `"Tell me more about it"` → system asks for context
+```bash
+# PDF search
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What prompting techniques achieved highest accuracy?", "session_id": "pdf-query"}'
+
+# Web fallback
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What did OpenAI announce this week?", "session_id": "web-query"}'
+
+# Clarification (system asks for context)
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Tell me more about it", "session_id": "clarify-session"}'
+```
 
 ## Architecture
 

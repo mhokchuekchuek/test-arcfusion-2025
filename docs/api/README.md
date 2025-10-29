@@ -32,16 +32,17 @@ curl -X POST http://localhost:8000/chat \
 ## Simple Example
 
 ```bash
+# With specific session_id
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the accuracy in Zhang et al.?"}'
+  -d '{"message": "What is the accuracy in Zhang et al.?", "session_id": "my-session"}'
 ```
 
 Response:
 ```json
 {
   "answer": "According to Zhang et al., the accuracy is 87.3%.",
-  "session_id": "abc-123",
+  "session_id": "my-session",
   "message_count": 2
 }
 ```

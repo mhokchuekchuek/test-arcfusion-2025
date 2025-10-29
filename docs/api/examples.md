@@ -9,18 +9,22 @@ Practical examples for using the REST API.
 ### cURL
 
 ```bash
+# Without session_id (auto-generated)
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What is DAIL-SQL?"
-  }'
+  -d '{"message": "What is DAIL-SQL?"}'
+
+# With specific session_id
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is DAIL-SQL?", "session_id": "user-123"}'
 ```
 
 Response:
 ```json
 {
   "answer": "DAIL-SQL is a text-to-SQL approach that...",
-  "session_id": "abc-123-def-456",
+  "session_id": "user-123",
   "message_count": 2,
   "confidence_score": 0.85
 }
@@ -33,26 +37,18 @@ Response:
 ### Continue Session
 
 ```bash
-# First message
+# First message with session_id
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What is the accuracy?"
-  }'
+  -d '{"message": "What is the accuracy?", "session_id": "my-conversation"}'
 
-# Save the session_id from response
-# SESSION_ID="abc-123"
-
-# Follow-up message (uses history)
+# Follow-up message (uses same session_id for history)
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What about the dataset?",
-    "session_id": "abc-123"
-  }'
+  -d '{"message": "What about the dataset?", "session_id": "my-conversation"}'
 ```
 
-The second request has access to conversation history.
+The second request has access to conversation history because it uses the same `session_id`.
 
 ---
 
@@ -217,9 +213,7 @@ requests.delete(f"{base_url}/memory/{session_id}")
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What accuracy is reported in Table 2 of Zhang et al.?"
-  }'
+  -d '{"message": "What accuracy is reported in Table 2 of Zhang et al.?", "session_id": "pdf-query"}'
 ```
 
 Agent uses PDF retrieval tool only.
@@ -231,9 +225,7 @@ Agent uses PDF retrieval tool only.
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What did OpenAI announce this month?"
-  }'
+  -d '{"message": "What did OpenAI announce this month?", "session_id": "web-query"}'
 ```
 
 Agent uses web search tool.
@@ -245,9 +237,7 @@ Agent uses web search tool.
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "Find SOTA text-to-SQL approaches in papers, then search for recent improvements"
-  }'
+  -d '{"message": "Find SOTA text-to-SQL approaches in papers, then search for recent improvements", "session_id": "research-query"}'
 ```
 
 Agent autonomously uses both PDF and web tools.
@@ -259,16 +249,14 @@ Agent autonomously uses both PDF and web tools.
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "Tell me about the accuracy"
-  }'
+  -d '{"message": "Tell me about the accuracy", "session_id": "clarify-session"}'
 ```
 
 Response:
 ```json
 {
   "answer": "Could you clarify which accuracy you're referring to? For example: model accuracy, dataset accuracy, or accuracy from a specific paper?",
-  "session_id": "abc-123",
+  "session_id": "clarify-session",
   "message_count": 2
 }
 ```
