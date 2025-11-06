@@ -25,7 +25,6 @@ class AgentState(TypedDict):
         clarification_needed: Flag indicating if query needs clarification
         missing_context: List of information that is vague or missing from query
         final_answer: Final synthesized answer to user query
-        confidence_score: Confidence score (0-1) in the answer quality
     """
 
     # Core conversation
@@ -86,6 +85,5 @@ def create_initial_state(
         clarification_needed=False,
         missing_context=[],
         clarification_count=0,
-        final_answer=None,
-        confidence_score=None,
+        final_answer=None
     )
