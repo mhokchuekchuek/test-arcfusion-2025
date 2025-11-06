@@ -1,6 +1,7 @@
 """Master Orchestrator for intent classification and routing."""
 
 from typing import Optional
+
 from langchain_core.messages import AIMessage, HumanMessage
 
 from src.agents.base import BaseAgent
@@ -69,6 +70,38 @@ class MasterOrchestrator(BaseAgent):
                 f"LAYER 1 TRIGGERED: Max clarifications reached "
                 f"({clarification_count}/{max_clarifications}) - forcing research to prevent infinite loop"
             )
+
+            # Trace the decision (even though no LLM was called)
+            if self.langfuse_client:
+                try:
+                    session_id = state.get("session_id")
+                    query = messages[-1].content
+                    history = self._format_history(messages[:-1])
+
+                    self.langfuse_client.trace_generation(
+                        name=self.agent_name,
+                        input_data={
+                            "query": query,
+                            "history": history,
+                            "clarification_count": clarification_count,
+                            "max_clarifications": max_clarifications
+                        },
+                        output=f"RESEARCH (forced by Layer 1: max clarifications reached {clarification_count}/{max_clarifications})",
+                        model="rule-based",  # No LLM used
+                        metadata={
+                            "agent": "MasterOrchestrator",
+                            "decision_method": "counter_limit",
+                            "layer_triggered": 1,
+                            "llm_called": False,
+                            "clarification_count": clarification_count,
+                            "max_clarifications": max_clarifications
+                        },
+                        session_id=session_id
+                    )
+                    logger.info(f"✓ Langfuse trace recorded (name={self.agent_name}, session={session_id}, layer=1)")
+                except Exception as e:
+                    logger.warning(f"Failed to trace Layer 1 decision to Langfuse: {e}")
+
             state["next_agent"] = "research"
             state["clarification_needed"] = False
             state["clarification_count"] = 0  # Reset counter
@@ -79,7 +112,7 @@ class MasterOrchestrator(BaseAgent):
         # LAYER 2: Pattern Detection (Clarification Follow-up)
         # ========================================================================
         # If the last agent was clarification and user is responding,
-        # route directly to research (user has provided context)
+        # check if we should force research (if max clarifications reached)
         if len(messages) >= 2:
             prev_msg = messages[-2]
             current_msg = messages[-1]
@@ -93,15 +126,61 @@ class MasterOrchestrator(BaseAgent):
                 isinstance(current_msg, HumanMessage) and
                 last_agent == "clarification"):
 
-                logger.info(
-                    f"LAYER 2 TRIGGERED: Clarification follow-up detected "
-                    f"(last_agent={last_agent}, pattern=AI->Human) - routing to research"
-                )
-                state["next_agent"] = "research"
-                state["clarification_needed"] = False
-                state["clarification_count"] = 0  # Reset since user provided context
-                state["iteration"] += 1
-                return state
+                # Only force research if we've reached max clarifications
+                # Otherwise, let Layer 3 decide (user may still be vague)
+                if clarification_count >= max_clarifications:
+                    logger.info(
+                        f"LAYER 2 TRIGGERED: Clarification follow-up detected AND max reached "
+                        f"({clarification_count}/{max_clarifications}, pattern=AI->Human) - forcing research"
+                    )
+
+                    # Trace the decision (even though no LLM was called)
+                    if self.langfuse_client:
+                        try:
+                            session_id = state.get("session_id")
+                            query = messages[-1].content
+                            history = self._format_history(messages[:-1])
+
+                            self.langfuse_client.trace_generation(
+                                name=self.agent_name,
+                                input_data={
+                                    "query": query,
+                                    "history": history,
+                                    "last_agent": last_agent,
+                                    "clarification_count": clarification_count,
+                                    "max_clarifications": max_clarifications
+                                },
+                                output=f"RESEARCH (Layer 2: clarification follow-up + max reached {clarification_count}/{max_clarifications})",
+                                model="rule-based",  # No LLM used
+                                metadata={
+                                    "agent": "MasterOrchestrator",
+                                    "decision_method": "pattern_detection",
+                                    "layer_triggered": 2,
+                                    "llm_called": False,
+                                    "last_agent": last_agent,
+                                    "pattern": "AI->Human",
+                                    "clarification_count": clarification_count,
+                                    "max_clarifications": max_clarifications
+                                },
+                                session_id=session_id
+                            )
+                            logger.info(f"✓ Langfuse trace recorded (name={self.agent_name}, session={session_id}, layer=2)")
+                        except Exception as e:
+                            logger.warning(f"Failed to trace Layer 2 decision to Langfuse: {e}")
+
+                    state["next_agent"] = "research"
+                    state["clarification_needed"] = False
+                    state["clarification_count"] = 0  # Reset since user provided context
+                    state["iteration"] += 1
+                    return state
+                else:
+                    # User responded to clarification, but we haven't reached max yet
+                    # Let Layer 3 (LLM) decide if the response is now clear or still needs clarification
+                    logger.info(
+                        f"LAYER 2 SKIPPED: Clarification follow-up detected but count={clarification_count} < max={max_clarifications}, "
+                        f"letting Layer 3 decide"
+                    )
+                    # Fall through to Layer 3
 
         # ========================================================================
         # LAYER 3: LLM Decision (Context-Aware Routing)
