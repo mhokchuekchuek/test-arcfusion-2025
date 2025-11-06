@@ -1,7 +1,7 @@
 """Web search tool for LangChain agents."""
 
 from langchain.tools import BaseTool
-from typing import Callable
+
 from tools.llm.websearch.base import BaseWebSearchClient
 
 

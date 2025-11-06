@@ -1,6 +1,7 @@
 """Research Supervisor using ReAct pattern for autonomous tool selection."""
 
 from typing import List, Optional
+
 from langchain.agents import create_agent
 from langchain.tools import BaseTool
 
