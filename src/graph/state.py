@@ -56,7 +56,6 @@ class AgentState(TypedDict):
 
     # Output
     final_answer: Optional[str]
-    confidence_score: Optional[float]
 
 
 def create_initial_state(

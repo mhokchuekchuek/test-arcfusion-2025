@@ -1,6 +1,7 @@
 """Answer Synthesis Agent for formatting final answers."""
 
 from typing import Optional
+
 from langchain_core.messages import AIMessage, HumanMessage
 
 from src.agents.base import BaseAgent
@@ -118,13 +119,9 @@ class AnswerSynthesisAgent(BaseAgent):
 
             logger.info("Answer synthesized successfully")
 
-            # Calculate confidence score
-            confidence = self._calculate_confidence(observations)
-
             # Update state
             state["messages"].append(AIMessage(content=answer))
             state["final_answer"] = answer
-            state["confidence_score"] = confidence
             state["next_agent"] = "END"
             state["last_agent"] = "synthesis"  # Track that synthesis agent executed
 
@@ -136,25 +133,6 @@ class AnswerSynthesisAgent(BaseAgent):
             fallback = final_output if final_output else "I encountered an error while processing your request."
             state["messages"].append(AIMessage(content=fallback))
             state["final_answer"] = fallback
-            state["confidence_score"] = 0.0
             state["next_agent"] = "END"
             return state
 
-    def _calculate_confidence(self, observations: list) -> float:
-        """Calculate confidence score based on observations.
-
-        Args:
-            observations: List of observation strings
-
-        Returns:
-            Confidence score between 0.0 and 1.0
-        """
-        num_observations = len(observations)
-        if num_observations == 0:
-            return 0.0
-        elif num_observations == 1:
-            return 0.6
-        elif num_observations == 2:
-            return 0.8
-        else:
-            return 0.95

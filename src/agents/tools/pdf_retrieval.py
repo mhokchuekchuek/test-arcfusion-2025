@@ -1,9 +1,5 @@
 """PDF retrieval tool for LangChain agents."""
-
-from typing import Optional
-
 from langchain.tools import BaseTool
-from pydantic import Field
 
 from src.rag.service import RAGService
 
