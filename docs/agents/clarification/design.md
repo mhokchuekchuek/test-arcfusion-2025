@@ -75,39 +75,46 @@ def execute(self, state: AgentState) -> AgentState:
     return state
 ```
 
-**Key Insight**: By setting `last_agent = "clarification"`, the Orchestrator can detect when user responds and skip clarification.
+**Key Insight**: By setting `last_agent = "clarification"`, the Orchestrator tracks which agent executed last for loop prevention logic.
 
 ---
 
-### Layer 2: Orchestrator Counter
+### Orchestrator Loop Prevention
 
-The Orchestrator tracks total clarifications:
+The Orchestrator uses a **two-layer system** to prevent infinite clarification loops:
+
+#### Layer 1: Counter Limit (Emergency Brake)
+
+The Orchestrator tracks total clarifications and enforces a hard limit:
 
 ```python
 # In Orchestrator
 if state["clarification_count"] >= self.max_clarifications:
-    # Force research after max clarifications
+    # Force research after max clarifications (safety brake)
     state["next_agent"] = "research"
     state["clarification_count"] = 0
 ```
 
 **Configuration**: `max_clarifications = 2` (configurable in `configs/agents/langgraph.yaml`)
 
----
+**Purpose**: Hard safety limit to prevent infinite clarification loops, regardless of user responses.
 
-### Layer 3: Pattern Detection
+#### Layer 2: LLM Decision (Intelligence)
 
-The Orchestrator detects AI→Human message pattern:
+If Layer 1 doesn't trigger, the LLM analyzes the query:
 
 ```python
-# In Orchestrator
-if last_agent == "clarification" and len(messages) >= 2:
-    if isinstance(messages[-2], AIMessage) and isinstance(messages[-1], HumanMessage):
-        # User responded to clarification, skip LLM and route to research
-        state["next_agent"] = "research"
+# In Orchestrator (simplified)
+decision = llm.analyze(query, history)
+if "CLARIFICATION" in decision:
+    state["next_agent"] = "clarification"
+    state["clarification_count"] += 1
+else:
+    state["next_agent"] = "research"
+    state["clarification_count"] = 0
 ```
 
-**Behavior**: When user responds to clarification, Orchestrator bypasses LLM decision and routes directly to research.
+**Purpose**: Context-aware routing based on query clarity.
 
 ---
 
@@ -117,7 +124,7 @@ if last_agent == "clarification" and len(messages) >= 2:
 User: "Tell me more about it" (vague)
   │
   ▼
-Orchestrator (Layer 3: LLM decides)
+Orchestrator (Layer 2: LLM Decision)
   ├─→ Decision: CLARIFICATION
   └─→ clarification_count: 0 → 1
   │
@@ -131,10 +138,10 @@ Clarification Agent
 User: "The DAIL-SQL approach" (responds)
   │
   ▼
-Orchestrator (Layer 2: Pattern Detection)
-  ├─→ Detects: last_agent == "clarification" + AI→Human pattern
-  ├─→ Skips: LLM call (saves latency)
-  └─→ Routes: directly to research
+Orchestrator (Layer 2: LLM Decision)
+  ├─→ LLM analyzes response with context
+  ├─→ Decision: RESEARCH (query now clear)
+  └─→ Routes: to research agent
   │
   ▼
 Research Agent (uses PDF tool)
@@ -149,7 +156,7 @@ If user responds vaguely AGAIN:
 User: "Tell me more about that" (still vague)
   │
   ▼
-Orchestrator (Layer 3: LLM decides)
+Orchestrator (Layer 2: LLM Decision)
   ├─→ Decision: CLARIFICATION
   └─→ clarification_count: 1 → 2
   │
@@ -274,7 +281,7 @@ def execute(self, state: AgentState) -> AgentState:
 
 | Field | Type | Value | Purpose |
 |-------|------|-------|---------|
-| `last_agent` | str | `"clarification"` | Enable pattern detection |
+| `last_agent` | str | `"clarification"` | Track agent execution for state management |
 | `messages` | Sequence[BaseMessage] | `+ AIMessage(clarification)` | Add question to history |
 | `final_answer` | str | `clarification` | Return to user |
 | `clarification_needed` | bool | `False` | Reset flag |
@@ -587,12 +594,11 @@ def test_clarification_loop_prevention():
 ## Key Takeaways
 
 1. **Three Vagueness Types**: Missing context, ambiguous references, underspecified parameters
-2. **Loop Prevention**: Three-layer defense (state tracking, counter, pattern detection)
+2. **Loop Prevention**: Two-layer defense (counter limit + LLM decision)
 3. **Always Ends Workflow**: Returns to user, waits for response
-4. **Pattern Detection**: Orchestrator skips clarification when user responds
-5. **Max 2 Clarifications**: Guaranteed termination, forced research after limit
-6. **State Marking**: Sets `last_agent = "clarification"` for detection
-7. **Generic Fallback**: Returns generic question on LLM failure
-8. **Observability**: Full tracing to Langfuse
+4. **Max 2 Clarifications**: Guaranteed termination, forced research after limit
+5. **State Marking**: Sets `last_agent = "clarification"` for state tracking
+6. **Generic Fallback**: Returns generic question on LLM failure
+7. **Observability**: Full tracing to Langfuse
 
-The Clarification Agent generates clarifying questions for ambiguous queries and coordinates with the Orchestrator to prevent infinite loops using a multi-layer strategy.
+The Clarification Agent generates clarifying questions for ambiguous queries and coordinates with the Orchestrator to prevent infinite loops using a two-layer strategy.

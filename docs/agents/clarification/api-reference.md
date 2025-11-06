@@ -71,7 +71,7 @@ def execute(self, state: AgentState) -> AgentState:
 - `state["messages"]` (Sequence[BaseMessage]): Updated with new AIMessage containing clarification question
 - `state["final_answer"]` (str): The clarifying question text
 - `state["next_agent"]` (str): Set to `"END"` (returns control to user)
-- `state["last_agent"]` (str): Set to `"clarification"` (for pattern detection)
+- `state["last_agent"]` (str): Set to `"clarification"` (for state tracking and observability)
 
 ## Configuration
 
